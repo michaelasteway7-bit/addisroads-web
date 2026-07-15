@@ -6,6 +6,7 @@ const getLocationBtn = document.getElementById("get-location-btn");
 const locationStatus = document.getElementById("location-status");
 const submitBtn = document.getElementById("submit-btn");
 const resultMessage = document.getElementById("result-message");
+const photoInput = document.getElementById("photo");
 
 let currentLocation = null; // will hold { lat, lng } once set
 
@@ -32,7 +33,6 @@ getLocationBtn.addEventListener("click", () => {
     }
   );
 });
-
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -45,18 +45,44 @@ form.addEventListener("submit", async (event) => {
   const hazardType = document.getElementById("hazard_type").value;
   const description = document.getElementById("description").value;
 
-  const payload = {
-    hazard_type: hazardType,
-    description: description || null,
-    latitude: currentLocation.lat,
-    longitude: currentLocation.lng,
-    source: "web",
-  };
-
   submitBtn.disabled = true;
   submitBtn.textContent = "Submitting...";
 
   try {
+    // Step 1: if a photo was selected, upload it first and get back its URL.
+    let photoUrl = null;
+
+    if (photoInput.files.length > 0) {
+      submitBtn.textContent = "Uploading photo...";
+
+      const photoFormData = new FormData();
+      photoFormData.append("file", photoInput.files[0]);
+
+      const uploadResponse = await fetch(`${API_BASE_URL}/uploads`, {
+        method: "POST",
+        body: photoFormData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Photo upload failed with ${uploadResponse.status}`);
+      }
+
+      const uploadData = await uploadResponse.json();
+      photoUrl = uploadData.photo_url;
+    }
+
+    // Step 2: submit the actual report, including the photo URL if we have one.
+    submitBtn.textContent = "Submitting report...";
+
+    const payload = {
+      hazard_type: hazardType,
+      description: description || null,
+      latitude: currentLocation.lat,
+      longitude: currentLocation.lng,
+      photo_url: photoUrl,
+      source: "web",
+    };
+
     const response = await fetch(`${API_BASE_URL}/reports`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -1,95 +1,82 @@
-// Change this if your backend runs somewhere other than localhost:8000
+// Change this if your backend runs somewhere other than the live URL
 const API_BASE_URL = "https://apex.pythonanywhere.com";
 
-// Start with a reasonable default view of Addis Ababa —
-// we'll zoom to the actual reports once they load.
-const map = L.map("map").setView([9.03, 38.74], 13);
+const STATUS_OPTIONS = ["reported", "acknowledged", "in_progress", "resolved"];
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "&copy; OpenStreetMap contributors",
-  maxZoom: 19,
-}).addTo(map);
+const reportsList = document.getElementById("reports-list");
+const countLabel = document.getElementById("report-count");
 
-const COLORS = {
-  pothole: "#d97706",
-  accident: "#dc2626",
-  flooding: "#2563eb",
-  road_collapse: "#7c2d12",
-  other: "#6b7280",
-};
-
-// Turns coordinates into a real address, e.g. "Bole Road, Addis Ababa"
-async function reverseGeocode(lat, lng) {
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`
-    );
-    if (!response.ok) throw new Error("Geocoding failed");
-    const data = await response.json();
-    return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-  } catch (error) {
-    console.error(error);
-    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`; // fallback if lookup fails
-  }
+function formatDate(isoString) {
+  return new Date(isoString).toLocaleString();
 }
 
-function makeMarker(report) {
-  const color = COLORS[report.hazard_type] || "#1f5c4e";
+function renderReportCard(report) {
+  const card = document.createElement("div");
+  card.className = `report-card ${report.hazard_type}`;
 
-  const marker = L.circleMarker([report.latitude, report.longitude], {
-    radius: 9,
-    color: "#fff",
-    weight: 2,
-    fillColor: color,
-    fillOpacity: 0.9,
-  });
+  const statusOptionsHtml = STATUS_OPTIONS.map(
+    (status) =>
+      `<option value="${status}" ${status === report.status ? "selected" : ""}>${status.replace("_", " ")}</option>`
+  ).join("");
 
-  const reportedDate = new Date(report.created_at).toLocaleString();
+  card.innerHTML = `
+    <div class="report-top">
+      <span class="hazard-type">${report.hazard_type.replace("_", " ")}</span>
+      <span class="reported-date">${formatDate(report.created_at)}</span>
+    </div>
+    ${report.description ? `<div class="description">${report.description}</div>` : ""}
+    ${report.photo_url ? `<img src="${report.photo_url}" style="width:100%;border-radius:6px;margin:6px 0;" />` : ""}
+    <div class="status-row">
+      <label>Status:</label>
+      <select class="status-select">${statusOptionsHtml}</select>
+      <button class="save-status-btn">Save</button>
+      <span class="save-confirmation" style="display: none;">✅ Saved</span>
+    </div>
+  `;
 
-  // Show a "loading address..." placeholder immediately,
-  // then fill in the real address once the lookup finishes.
-  marker.bindPopup(`
-    <strong>${report.hazard_type.replace("_", " ")}</strong><br/>
-    ${report.description ? report.description + "<br/>" : ""}
-    <em id="addr-${report.id}">Looking up address...</em><br/>
-    <small>Status: ${report.status}</small><br/>
-    <small>Reported: ${reportedDate}</small>
-  `);
+  const select = card.querySelector(".status-select");
+  const saveBtn = card.querySelector(".save-status-btn");
+  const confirmation = card.querySelector(".save-confirmation");
 
-  marker.on("popupopen", async () => {
-    const addressEl = document.getElementById(`addr-${report.id}`);
-    if (addressEl && addressEl.textContent === "Looking up address...") {
-      addressEl.textContent = await reverseGeocode(report.latitude, report.longitude);
+  saveBtn.addEventListener("click", async () => {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+    confirmation.style.display = "none";
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/reports/${report.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: select.value }),
+      });
+
+      if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+
+      confirmation.style.display = "inline";
+    } catch (error) {
+      alert("Failed to save status. Is the backend running?");
+      console.error(error);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save";
     }
   });
 
-  return marker;
+  return card;
 }
 
 async function loadReports() {
-  const countLabel = document.getElementById("report-count");
-
   try {
-    const response = await fetch(`${API_BASE_URL}/reports?limit=500`);
+    const response = await fetch(`${API_BASE_URL}/reports?limit=200`);
     if (!response.ok) throw new Error(`Server responded with ${response.status}`);
 
     const reports = await response.json();
-    const markers = [];
+    countLabel.textContent = `${reports.length} report(s)`;
 
+    reportsList.innerHTML = "";
     reports.forEach((report) => {
-      const marker = makeMarker(report);
-      marker.addTo(map);
-      markers.push(marker);
+      reportsList.appendChild(renderReportCard(report));
     });
-
-    countLabel.textContent = `${reports.length} report(s) on the map`;
-
-    // Auto-zoom/pan so all reports are actually visible and close-up,
-    // instead of always showing the whole city zoomed out.
-    if (markers.length > 0) {
-      const group = L.featureGroup(markers);
-      map.fitBounds(group.getBounds().pad(0.3), { maxZoom: 16 });
-    }
   } catch (error) {
     countLabel.textContent = "Could not load reports. Is the backend running?";
     console.error(error);
