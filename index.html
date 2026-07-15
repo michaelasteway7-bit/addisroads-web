@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AddisRoads</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <h1>AddisRoads</h1>
+    <p>Report a road hazard in seconds</p>
+  </header>
+
+  <main>
+    <form id="report-form">
+      <label for="hazard_type">What kind of issue?</label>
+      <select id="hazard_type" required>
+        <option value="pothole">Pothole</option>
+        <option value="accident">Accident</option>
+        <option value="flooding">Flooding</option>
+        <option value="road_collapse">Road Collapse</option>
+        <option value="other">Other</option>
+      </select>
+
+      <label for="description">Short description (optional)</label>
+      <textarea id="description" rows="3" placeholder="e.g. Large pothole blocking right lane"></textarea>
+
+      <button type="button" id="get-location-btn">📍 Use My Current Location</button>
+      <p id="location-status">Location not set yet.</p>
+
+      <button type="submit" id="submit-btn">Submit Report</button>
+    </form>
+
+    <p id="result-message"></p>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

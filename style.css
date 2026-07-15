@@ -1,0 +1,97 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: #f4f6f5;
+  color: #1a1a1a;
+}
+
+header {
+  background: #1f5c4e;
+  color: white;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+header h1 {
+  margin: 0 0 4px 0;
+  font-size: 26px;
+}
+
+header p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+form {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+select,
+textarea {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+button {
+  margin-top: 16px;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#get-location-btn {
+  background: #e8f0ee;
+  color: #1f5c4e;
+}
+
+#submit-btn {
+  background: #1f5c4e;
+  color: white;
+}
+
+#submit-btn:disabled {
+  background: #a8b8b4;
+  cursor: not-allowed;
+}
+
+#location-status {
+  font-size: 13px;
+  color: #666;
+  margin: 4px 0 0 0;
+}
+
+#result-message {
+  text-align: center;
+  font-weight: 600;
+  margin-top: 16px;
+}
